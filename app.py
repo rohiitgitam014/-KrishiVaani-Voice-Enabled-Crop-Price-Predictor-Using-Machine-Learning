@@ -1,8 +1,6 @@
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
 import speech_recognition as sr
-from pydub import AudioSegment
-import io
 import pandas as pd
 import re
 from datetime import datetime
@@ -11,12 +9,12 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
 
 st.set_page_config(page_title="🎤 KrishiVaani: Voice Crop Price Predictor", layout="centered")
-st.title("🎤 KrishiVaani: Record or Upload Audio to Predict Crop Price (🌍 Multilingual)")
+st.title("🎤 KrishiVaani: Record or Upload Audio (.wav only) to Predict Crop Price (🌍 Multilingual)")
 
-# Step 1: Record or upload audio
+# Step 1: Record or upload audio (.wav only)
 st.subheader("🎙️ Step 1: Record or Upload Audio")
 audio_bytes = audio_recorder(text="Click to Record", recording_color="#e8b62c", neutral_color="#6aa36f", icon_size="2x")
-uploaded_file = st.file_uploader("Or upload an audio file (.wav or .mp3)", type=["wav", "mp3"])
+uploaded_file = st.file_uploader("Or upload a .wav audio file", type=["wav"])
 
 # Step 2: Choose language
 st.subheader("🌐 Step 2: Choose Language")
@@ -28,22 +26,11 @@ lang_option = st.selectbox("Select language spoken in the audio:", {
     "Bengali": "bn-IN"
 })
 
-def convert_mp3_to_wav(mp3_bytes):
-    audio = AudioSegment.from_file(io.BytesIO(mp3_bytes), format="mp3")
-    wav_io = io.BytesIO()
-    audio.export(wav_io, format="wav")
-    wav_io.seek(0)
-    return wav_io.read()
-
-# Determine audio bytes to process
+# Use uploaded file audio bytes if uploaded, else recorded audio bytes
 if uploaded_file:
-    file_bytes = uploaded_file.read()
-    if uploaded_file.type == "audio/mp3":
-        audio_bytes = convert_mp3_to_wav(file_bytes)
-    else:
-        audio_bytes = file_bytes
+    audio_bytes = uploaded_file.read()
 
-# Transcribe audio
+# Function to transcribe audio bytes using SpeechRecognition
 def transcribe_audio_from_bytes(audio_bytes, language='en-IN'):
     recognizer = sr.Recognizer()
     with open("temp.wav", "wb") as f:
@@ -55,7 +42,7 @@ def transcribe_audio_from_bytes(audio_bytes, language='en-IN'):
     except:
         return "Could not understand audio"
 
-# Parse text (basic Hindi + English)
+# Function to parse transcribed text into crop price data
 def parse_text(text, language='en-IN'):
     if language == "hi-IN":
         crop_match = re.search(r"(टमाटर|चावल|गेहूं|प्याज़|आलू)", text)
@@ -87,7 +74,7 @@ def parse_text(text, language='en-IN'):
         "Currency": "INR"
     }
 
-# Predict price using RandomForestRegressor
+# Predict crop price using RandomForestRegressor on saved dataset
 def predict_price(parsed, dataset_path="crop_dataset.csv"):
     if not os.path.exists(dataset_path):
         return "No dataset found to train model."
@@ -112,15 +99,20 @@ def predict_price(parsed, dataset_path="crop_dataset.csv"):
     model = RandomForestRegressor(n_estimators=100, random_state=42)
     model.fit(X, y)
 
-    input_crop = le_crop.transform([parsed["Crop"]])[0]
-    input_market = le_market.transform([parsed["Market"]])[0]
+    try:
+        input_crop = le_crop.transform([parsed["Crop"]])[0]
+        input_market = le_market.transform([parsed["Market"]])[0]
+    except ValueError:
+        return "Crop or Market not found in training data."
+
     input_day = parsed["Date"].day
     input_month = parsed["Date"].month
     input_quantity = parsed["Quantity"]
     X_input = [[input_crop, input_market, input_day, input_month, input_quantity]]
+
     return round(model.predict(X_input)[0], 2)
 
-# Main app flow
+# Main app logic
 if audio_bytes:
     st.subheader("🧠 Step 3: Transcribe and Analyze")
 
@@ -142,4 +134,9 @@ if audio_bytes:
 
         if st.button("📈 Predict Crop Price"):
             result = predict_price(parsed_data)
-            st.success(f"📊 Predicted Price: ₹{result} per quintal")
+            if isinstance(result, str):
+                st.error(result)
+            else:
+                st.success(f"📊 Predicted Price: ₹{result} per quintal")
+else:
+    st.info("Please record audio or upload a .wav audio file to begin.")
