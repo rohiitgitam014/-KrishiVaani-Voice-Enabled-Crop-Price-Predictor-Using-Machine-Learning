@@ -8,7 +8,7 @@ import os
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
 
-st.set_page_config(page_title="🎤 Voice Crop Price App (Multilingual)", layout="centered")
+st.set_page_config(page_title="🌾🔊 KrishiVaani: Voice-Enabled Crop Price Predictor Using Machine Learning", layout="centered")
 st.title("🎤 Record or Upload Audio to Predict Crop Price (🌍 Multilingual)")
 
 # Record or upload
