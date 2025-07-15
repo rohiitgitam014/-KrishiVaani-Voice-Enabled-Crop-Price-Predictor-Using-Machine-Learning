@@ -3,6 +3,4 @@ pandas
 scikit-learn
 speechrecognition
 audio-recorder-streamlit
-pydub
-ffmpeg-python
 
