@@ -1,6 +1,8 @@
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
 import speech_recognition as sr
+from pydub import AudioSegment
+import io
 import pandas as pd
 import re
 from datetime import datetime
@@ -8,15 +10,15 @@ import os
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
 
-st.set_page_config(page_title="🌾🔊 KrishiVaani: Voice-Enabled Crop Price Predictor Using Machine Learning", layout="centered")
-st.title("🌾🔊 KrishiVaani: Voice-Enabled Crop Price Predictor Using Machine Learning")
+st.set_page_config(page_title="🎤 KrishiVaani: Voice Crop Price Predictor", layout="centered")
+st.title("🎤 KrishiVaani: Record or Upload Audio to Predict Crop Price (🌍 Multilingual)")
 
-# Record or upload
+# Step 1: Record or upload audio
 st.subheader("🎙️ Step 1: Record or Upload Audio")
 audio_bytes = audio_recorder(text="Click to Record", recording_color="#e8b62c", neutral_color="#6aa36f", icon_size="2x")
-uploaded_file = st.file_uploader("Or upload a .wav audio file", type=["wav"])
+uploaded_file = st.file_uploader("Or upload an audio file (.wav or .mp3)", type=["wav", "mp3"])
 
-# Language selection
+# Step 2: Choose language
 st.subheader("🌐 Step 2: Choose Language")
 lang_option = st.selectbox("Select language spoken in the audio:", {
     "English (India)": "en-IN",
@@ -26,12 +28,27 @@ lang_option = st.selectbox("Select language spoken in the audio:", {
     "Bengali": "bn-IN"
 })
 
-# Transcribe
+def convert_mp3_to_wav(mp3_bytes):
+    audio = AudioSegment.from_file(io.BytesIO(mp3_bytes), format="mp3")
+    wav_io = io.BytesIO()
+    audio.export(wav_io, format="wav")
+    wav_io.seek(0)
+    return wav_io.read()
+
+# Determine audio bytes to process
+if uploaded_file:
+    file_bytes = uploaded_file.read()
+    if uploaded_file.type == "audio/mp3":
+        audio_bytes = convert_mp3_to_wav(file_bytes)
+    else:
+        audio_bytes = file_bytes
+
+# Transcribe audio
 def transcribe_audio_from_bytes(audio_bytes, language='en-IN'):
     recognizer = sr.Recognizer()
-    with open("recorded_audio.wav", "wb") as f:
+    with open("temp.wav", "wb") as f:
         f.write(audio_bytes)
-    with sr.AudioFile("recorded_audio.wav") as source:
+    with sr.AudioFile("temp.wav") as source:
         audio = recognizer.record(source)
     try:
         return recognizer.recognize_google(audio, language=language)
@@ -70,7 +87,7 @@ def parse_text(text, language='en-IN'):
         "Currency": "INR"
     }
 
-# Prediction
+# Predict price using RandomForestRegressor
 def predict_price(parsed, dataset_path="crop_dataset.csv"):
     if not os.path.exists(dataset_path):
         return "No dataset found to train model."
@@ -103,11 +120,9 @@ def predict_price(parsed, dataset_path="crop_dataset.csv"):
     X_input = [[input_crop, input_market, input_day, input_month, input_quantity]]
     return round(model.predict(X_input)[0], 2)
 
-# Run the app
-if audio_bytes or uploaded_file:
+# Main app flow
+if audio_bytes:
     st.subheader("🧠 Step 3: Transcribe and Analyze")
-    if uploaded_file:
-        audio_bytes = uploaded_file.read()
 
     with st.spinner("Transcribing..."):
         transcribed_text = transcribe_audio_from_bytes(audio_bytes, language=lang_option)
