@@ -1,4 +1,3 @@
-# ... start of app.py
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
 import speech_recognition as sr
@@ -43,17 +42,17 @@ def transcribe_audio_from_bytes(audio_bytes, language='en-IN'):
 def parse_text(text, language='en-IN'):
     if language == "hi-IN":
         crop_match = re.search(r"(टमाटर|चावल|गेहूं|प्याज़|आलू)", text)
-        price_match = re.search(r"(\\d+) रुपये", text)
-        quantity_match = re.search(r"मात्रा (\\d+)", text)
-        market_match = re.search(r"(?:में|के) ([\\w\\s]+?) (?:की|पर)", text)
+        price_match = re.search(r"(\d+) रुपये", text)
+        quantity_match = re.search(r"मात्रा (\d+)", text)
+        market_match = re.search(r"(?:में|के) ([\w\s]+?) (?:की|पर)", text)
         date = datetime.today().date()
         crop = crop_match.group(1) if crop_match else None
     else:
         crop_match = re.search(r"(tomato|wheat|rice|onion|potato)", text.lower())
-        market_match = re.search(r"in ([a-zA-Z\\s]+?) on", text.lower())
-        date_match = re.search(r"on ([a-zA-Z]+\\s+\\d+)", text.lower())
-        price_match = re.search(r"for (\\d+) rupees", text.lower())
-        quantity_match = re.search(r"quantity (\\d+)", text.lower())
+        market_match = re.search(r"in ([a-zA-Z\s]+?) on", text.lower())
+        date_match = re.search(r"on ([a-zA-Z]+\s+\d+)", text.lower())
+        price_match = re.search(r"for (\d+) rupees", text.lower())
+        quantity_match = re.search(r"quantity (\d+)", text.lower())
         try:
             date = datetime.strptime(date_match.group(1), "%B %d").date()
         except:
