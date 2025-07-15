@@ -9,7 +9,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
 
 st.set_page_config(page_title="🌾🔊 KrishiVaani: Voice-Enabled Crop Price Predictor Using Machine Learning", layout="centered")
-st.title("🎤 Record or Upload Audio to Predict Crop Price (🌍 Multilingual)")
+st.title("🌾🔊 KrishiVaani: Voice-Enabled Crop Price Predictor Using Machine Learning")
 
 # Record or upload
 st.subheader("🎙️ Step 1: Record or Upload Audio")
